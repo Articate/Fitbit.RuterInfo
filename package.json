@@ -1,0 +1,19 @@
+{
+  "fitbit": {
+    "appUUID": "89ee59c9-1cdd-4b0e-a804-cf56b3e73e85",
+    "appType": "app",
+    "appDisplayName": "RuterInfo",
+    "iconFile": "resources/icon.png",
+    "wipeColor": "#607d8b",
+    "requestedPermissions": [],
+    "buildTargets": [
+      "higgs",
+      "meson"
+    ],
+    "i18n": {
+      "en": {
+        "name": "RuterInfo"
+      }
+    }
+  }
+}
