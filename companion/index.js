@@ -1,15 +1,14 @@
 import * as messaging from "messaging";
 import { settingsStorage } from "settings";
-import { Stop, Departure, getVehicleType } from "../common/index";
-// Ruter
+import { Stop, Departure, Deviation, StopData } from "../common/index";
+
 const API_URL = "http://reisapi.ruter.no/StopVisit/GetDepartures/"
 const SUFFIX = "?json=true";
 
-let stops = [new Stop("Møllefaret", 3012594)];
+let stops = [new Stop("Møllefaret", 3012540 //3012594
+                     )];
 
 let s = JSON.stringify;
-
-console.log(s(stops));
 
 getStopInfo(stops[0].id);
 
@@ -17,7 +16,7 @@ function getStopInfo(stopId) {
   fetch(getUrl(stopId), { method: "GET"})
   .then(function(response) {
     response.json().then(function(data) {
-      processData(data);
+      let data = processData(data);
     });
   }, function(error) {
     console.log("Error: " + error.code + " - " + error.message);
@@ -25,12 +24,60 @@ function getStopInfo(stopId) {
 }
 
 function processData(data) {
+  let deviations = []
+  let departures = []
+  
   for (let entry of data) {
-    let departureData = entry['MonitoredVehicleJourney'];
-    let realtimeInfo = departure_data['MonitoredCall'];
+    let dd = entry['MonitoredVehicleJourney'];
+    let ri = dd['MonitoredCall'];
     
-    let departure = new Departure(departureData, realtimeInfo);
-    departure.lineNumber = depag
+    let departure = new Departure();
+    departure.lineNumber = dd['PublishedLineName'];
+    departure.destinationName = dd['DestinationName'];
+    departure.platform = ri['DeparturePlatformName'];
+    departure.aimedDepartureTime = new Date(ri['AimedDepartureTime']);
+    departure.expectedDepartureTime = new Date(ri['ExpectedDepartureTime']);
+    departure.vehicleType = getVehicleType(dd['VehicleMode']);
+    departure.delay = parseDelay(dd['Delay']);
+
+    for (let deviation of entry['Extensions']['Deviations']) {
+      let found = false;
+      for (let item of deviations) {
+        if (item.id === deviation['ID']) {
+          found = true;
+        }
+      }
+      
+      if (!found) {
+        deviations.push(new Deviation(deviation['ID'], deviation['Header']));
+      }
+    }
+    
+    departures.push(departure);
+  }
+  
+  return new StopData(departures, deviations);
+}
+
+function parseDelay(delayStr) {
+  if (delayStr === null) {
+    return 0
+  }
+  if (delayStr.charAt(0) === '-') {
+    return -Number(Math.round(Number(delayStr.substring(3, delayStr.length - 1)) / 60.0))
+  } else {
+    return Number(Math.round(Number(delayStr.substring(2, delayStr.length - 1)) / 60.0))
+  }
+  return delayStr;
+}
+
+function getVehicleType(type) {
+  let type_string;
+  switch (type) {
+    case 0:
+      return 'bus';
+    default:
+      return 'metro';
   }
 }
 

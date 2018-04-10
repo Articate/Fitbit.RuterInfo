@@ -3,23 +3,37 @@ export class Stop {
     this.name = name;
     this.id = id;
   }
+
+  name;
+  id;
+}
+
+export class StopData {
+  constructor(departures, deviations) {
+    this.departures = departures;
+    this.deviations = deviations;
+  }
+  departures;
+  deviations;
+}
+
+export class Deviation {
+  constructor(id, header) {
+    this.id = id;
+    this.header = header;
+  }
+
+  id;
+  header;
 }
 
 export class Departure {
-  let lineNumber;
-  let destinationName;
-  let delay;
-  let aimedDepartureTime;
-  let expectedDepartureTime;
-  let platform;
-  let vehicleType;
-}
-
-export function getVehicleType(type) {
-  let type_string;
-  switch type:
-    case 0:
-      return 'bus';    
-    default:
-      return 'metro';
+  lineNumber;
+  destinationName;
+  delay;
+  aimedDepartureTime;
+  expectedDepartureTime;
+  platform;
+  vehicleType;
+  delay;
 }
