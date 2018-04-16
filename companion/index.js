@@ -142,7 +142,7 @@ messaging.peerSocket.onclose = () => {
 };
 
 messaging.peerSocket.onmessage = function(evt) {
-  if (evt.data && evt.data.command == "update") {
+  if (evt.data && evt.data.command === "update") {
     sendDepartureInfo(getFavouriteRequest(favs));
   }
 }

@@ -53,3 +53,14 @@ text.main-delay {
   font-size: 30;
   text-anchor: middle;
 }
+
+arc.load-arc {
+  fill: white;
+  arc-width: 4;
+}
+
+#spinner-background {
+  width: 100%;
+  height: 100%;
+  fill: black;
+}

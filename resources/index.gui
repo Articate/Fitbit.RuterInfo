@@ -1,5 +1,9 @@
-<svg viewport-fill="black">
-  <use id='container' href='#panoramaview' overflow='hidden'>
+<svg>
+  <use id='main-container' href='#panoramaview' overflow='hidden'>
+    <use href="#stop">
+    </use>
+    <use href="#stop">
+    </use>
     <use href="#stop">
     </use>
     <use href="#stop">
@@ -13,4 +17,5 @@
       <use href='#pagination-highlight-dot'/>
     </use>
   </use>
+  <use href="#spinner" />
 </svg>

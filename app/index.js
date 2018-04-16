@@ -14,39 +14,36 @@ import {
 } from "../common/const.js";
 
 let s = JSON.stringify;
-let getByClass = document.getElementsByClassName;
+let main = document.getElementById('main-container');
+let getByClass = main.getElementsByClassName;
 
-let background = document.getElementById("background");
 let messageBuffer = [];
 let domItems = [];
+let spinner = document.getElementById('spinner-container');
 
-gatherDom();
-
-for (let item of getByClass('scrollview')) {
-  console.log(item);
-  item.onpagescroll = function(evt) {
-    console.log("Yay!");
-  };
-}
+(function setup() {
+  spinner.animate('enable');
+  gatherDom();
+})();
 
 function gatherDom() {
   let stopContainers = getByClass("stop-container");
   let stopName = getByClass("stop-name");
   let lineNumber = getByClass("line-number");
+  let lineNumberText = getByClass("line-number-text");
   let lineDest = getByClass("line-dest");
+  let lineDestText = getByClass("line-dest-text");
   let mainDep = getByClass("main-departure");
   let mainDelay = getByClass("main-delay");
   
-  for (let i in stopName) {
-    if (i == 0) {
-      continue;
-    }
-    
+  for (let i in stopName) {    
     domItems.push({
       stopContainer: stopContainers[i],
       stopName: stopName[i],
       lineNumber: lineNumber[i],
+      lineNumberText: lineNumberText[i],
       lineDest: lineDest[i],
+      lineDestText: lineDestText[i],
       mainDep: mainDep[i],
       mainDelay: mainDelay[i]
     });
@@ -105,9 +102,9 @@ function updateDisplay(stopInfo) {
     let main_departure = stop.departures[0];
     domItems[i].stopName.text = stop.name;
     domItems[i].lineNumber.style.fill = getColor(stop.vehicleType);
-    domItems[i].lineNumber.getElementsByTagName("text")[0].text = stop.lineNumber;
+    domItems[i].lineNumberText.text = stop.lineNumber;
     domItems[i].lineDest.style.fill = getColor(stop.vehicleType);
-    domItems[i].lineDest.getElementsByTagName("text")[0].text = stop.destination;
+    domItems[i].lineDestText.text = stop.destination;
     domItems[i].mainDep.text = getDepartureText(main_departure.aimedDepartureTime);
     domItems[i].mainDelay.text = getDelayText(main_departure.delay);
   }
@@ -116,6 +113,12 @@ function updateDisplay(stopInfo) {
     let container = domItems[i].stopContainer;
     container.style.display = "none";
   }
+  
+  spinner.animate("disable");
+  spinner.style.display = "none";
+  
+  // force redraw
+  main.value = main.value;
 }
 
 function getColor(vehicleType) {
@@ -155,10 +158,20 @@ messaging.peerSocket.onclose = () => {
 };
 
 document.onkeypress = function(e) {
-  if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
-    vibration.start("bump");
-    messaging.peerSocket.send({
-      command: 'update'
-    });
+  if (e.key !== "up" && e.key !== "down") {
+    return;
   }
+  
+  if (messaging.peerSocket.readyState !== messaging.peerSocket.OPEN) {
+    console.error("Messaging not ready");
+    return;
+  }
+  
+  vibration.start("bump");
+  spinner.style.display = "inline";
+  spinner.getElementById('spinner-background').style.opacity = 0.65;
+  spinner.animate("enable");
+  messaging.peerSocket.send({
+    command: 'update'
+  });
 }
