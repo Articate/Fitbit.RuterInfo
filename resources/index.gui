@@ -1,3 +1,16 @@
-<svg>
-  <rect id="background" />
+<svg viewport-fill="black">
+  <use id='container' href='#panoramaview' overflow='hidden'>
+    <use href="#stop">
+    </use>
+    <use href="#stop">
+    </use>
+    <use id='pagination-dots' class='pagination' href='#pagination-widget' y='8'>
+      <use href='#pagination-dot'/>
+      <use href='#pagination-dot'/>
+      <use href='#pagination-dot'/>
+      <use href='#pagination-dot'/>
+      <use href='#pagination-dot'/>
+      <use href='#pagination-highlight-dot'/>
+    </use>
+  </use>
 </svg>

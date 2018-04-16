@@ -1,12 +1,55 @@
-.defaultText {
-  font-size: 32;
+#backdrop {
+  width: 100%;
+  height: 100%;
+  fill: black;
+}
+
+text {
+  fill: white;
   font-family: System-Regular;
   font-weight: regular;
   text-length: 32;
 }
 
-#background {
-  width: 100%;
-  height: 100%;
+.bus {
+  fill: #E60000;
+}
+
+.metro {
+  fill: #EC700C;
+}
+
+.line-info text {
   fill: white;
+}
+
+text.stop-name {
+  text-anchor: middle;
+  font-size: 40;
+  fill: #aaaaaa;
+}
+
+.line-number {
+  height: 100%;
+  width: 50;
+}
+
+.line-info text {
+  font-size: 38;
+  text-anchor: start;
+}
+
+.line-dest {
+  height: 100%;
+  width: 100%-55;
+}
+
+text.main-departure {
+  font-size: 80;
+  text-anchor: middle;
+}
+
+text.main-delay {
+  font-size: 30;
+  text-anchor: middle;
 }

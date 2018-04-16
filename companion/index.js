@@ -1,62 +1,107 @@
 import * as messaging from "messaging";
 import { settingsStorage } from "settings";
-import { Stop, Departure, Deviation, StopData } from "../common/index";
+import { Favourite, Departure, Deviation, StopData } from "../common/index";
+import { outbox } from "file-transfer";
+import * as cbor from 'cbor';
+import { TRANSFER_START,
+        TRANSFER_END,
+        SEND_BUFFERED,
+        MESSAGE_LENGTH,
+        SEND_AS_FILE,
+        STOP_DATA_FILE } from "../common/const.js";
 
-const API_URL = "http://reisapi.ruter.no/StopVisit/GetDepartures/"
-const SUFFIX = "?json=true";
+const API_URL = "https://reisapi.ruter.no/Favourites/GetFavourites";
 
-let stops = [new Stop("Møllefaret", 3012540 //3012594
-                     )];
+let message_buffer = [];
 
 let s = JSON.stringify;
 
-getStopInfo(stops[0].id);
+let favs = [
+  new Favourite('Møllefaret', 3012594, 32, 'Kværnerbyen'),
+  new Favourite('Røa', 3012450, 2, 'Ellingsrudåsen')
+];
 
-function getStopInfo(stopId) {
-  fetch(getUrl(stopId), { method: "GET"})
-  .then(function(response) {
-    response.json().then(function(data) {
-      let data = processData(data);
-    });
-  }, function(error) {
-    console.log("Error: " + error.code + " - " + error.message);
-  });
+//sendDepartureInfo(getFavouriteRequest(favs));
+
+function getFavouriteRequest(favourites) {
+  let str = '';
+  for (let fav of favourites) {
+    str += `${fav.id}-${fav.line}-${fav.destination},`;
+  }
+  return str;
+}
+
+function sendDepartureInfo(favouritesStr) {
+  let url = API_URL + '?favouritesRequest=' + favouritesStr + '&json=true';
+  fetch(encodeURI(url), { method: "GET"})
+  .then(response => response.json())
+  .catch(error => console.error('Error:', error))
+  .then(data => sendData(processData(data)));
 }
 
 function processData(data) {
-  let deviations = []
-  let departures = []
-  
-  for (let entry of data) {
-    let dd = entry['MonitoredVehicleJourney'];
-    let ri = dd['MonitoredCall'];
+  let allInfo = [];
+ 
+  for (let stop of data) {
+    let deviations = [];
+    let departures = [];
     
-    let departure = new Departure();
-    departure.lineNumber = dd['PublishedLineName'];
-    departure.destinationName = dd['DestinationName'];
-    departure.platform = ri['DeparturePlatformName'];
-    departure.aimedDepartureTime = new Date(ri['AimedDepartureTime']);
-    departure.expectedDepartureTime = new Date(ri['ExpectedDepartureTime']);
-    departure.vehicleType = getVehicleType(dd['VehicleMode']);
-    departure.delay = parseDelay(dd['Delay']);
+    if (departures.length >= 4) {
+      break;
+    }
+    
+    let stopContent = stop['MonitoredStopVisits'];
+    if (stopContent.length === 0) {
+      continue;
+    }
+    let info = stopContent[0]['MonitoredVehicleJourney']
+    let stopData = new StopData();
+    stopData.id = stop['StopID'];
+    stopData.name = getStopName(stopData.id);
+    stopData.lineNumber = stop['LineID'];
+    stopData.destination = stop['Destination'];
+    stopData.vehicleType = getVehicleType(info['VehicleMode']);
+    
+    let lineId = stop['StopID'];
+    for (let entry of stopContent) {
+      let dd = entry['MonitoredVehicleJourney'];
+      let ri = dd['MonitoredCall'];
 
-    for (let deviation of entry['Extensions']['Deviations']) {
-      let found = false;
-      for (let item of deviations) {
-        if (item.id === deviation['ID']) {
-          found = true;
-        }
-      }
+      let departure = new Departure();
+      departure.aimedDepartureTime = ri['AimedDepartureTime'];
+      departure.expectedDepartureTime = ri['ExpectedDepartureTime'];
+      departure.delay = parseDelay(dd['Delay']);
       
-      if (!found) {
-        deviations.push(new Deviation(deviation['ID'], deviation['Header']));
+      stopData.departures.push(departure);
+      
+      let deviations = entry['Extensions']['Deviations'];      
+      for (let deviation of deviations) {
+        let found = false;
+        for (let item of deviations) {
+          if (item.id === deviation['ID']) {
+            found = true;
+          }
+        }
+
+        if (!found) {
+          stopData.deviations.push(new Deviation(deviation['ID'], deviation['Header']));
+        }
       }
     }
     
-    departures.push(departure);
+    allInfo.push(stopData);
   }
   
-  return new StopData(departures, deviations);
+  return allInfo;
+}
+
+function getStopName(id) {
+  for (let fav of favs) {
+    if (fav.id === id) {
+      return fav.name;
+    }
+  }
+  return "not found";
 }
 
 function parseDelay(delayStr) {
@@ -68,7 +113,6 @@ function parseDelay(delayStr) {
   } else {
     return Number(Math.round(Number(delayStr.substring(2, delayStr.length - 1)) / 60.0))
   }
-  return delayStr;
 }
 
 function getVehicleType(type) {
@@ -76,6 +120,7 @@ function getVehicleType(type) {
   switch (type) {
     case 0:
       return 'bus';
+    case 4:
     default:
       return 'metro';
   }
@@ -87,14 +132,20 @@ function getUrl(parameter) {
 
 // Message socket opens
 messaging.peerSocket.onopen = () => {
-  console.log("Companion Socket Open");
-  restoreSettings();
+  console.log("Processing started");
+  sendDepartureInfo(getFavouriteRequest(favs));
 };
 
 // Message socket closes
 messaging.peerSocket.onclose = () => {
   console.log("Companion Socket Closed");
 };
+
+messaging.peerSocket.onmessage = function(evt) {
+  if (evt.data && evt.data.command == "update") {
+    sendDepartureInfo(getFavouriteRequest(favs));
+  }
+}
 
 // A user changes settings
 settingsStorage.onchange = evt => {
@@ -120,8 +171,44 @@ function restoreSettings() {
 }
 
 // Send data to device using Messaging API
-function sendVal(data) {
-  if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
+function sendData(data) {
+  if (SEND_AS_FILE) {
+    sendAsFile(data);
+  } else {
     messaging.peerSocket.send(data);
+  }
+}
+
+function sendAsFile(data) {
+  outbox.enqueue(STOP_DATA_FILE, cbor.encode(data))
+    .then(evt => { return })
+    .catch(error => console.log("Error sending settings: " + error));
+}
+
+function sendDataBuffered(data) {
+  if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
+    let dataStr = JSON.stringify(data);
+    message_buffer.push(TRANSFER_START);
+    
+    for (let i = 0; i < dataStr.length; i = i + MESSAGE_LENGTH) {
+      let end = (i + MESSAGE_LENGTH) < dataStr.length ? (i + MESSAGE_LENGTH) : dataStr.length;
+      message_buffer.push(dataStr.substring(i, end));
+    }    
+    
+    message_buffer.push(TRANSFER_END);
+    
+    bufferedSend();
+  }
+}
+
+function bufferedSend() {
+  while (messaging.peerSocket.bufferedAmount < 128 && message_buffer.length > 0) {
+    messaging.peerSocket.send(message_buffer.shift());
+  }
+}
+
+messaging.peerSocket.onbufferedamountdecrease = () => {
+  if (SEND_BUFFERED) {
+    bufferedSend();
   }
 }

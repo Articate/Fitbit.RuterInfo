@@ -1,20 +1,30 @@
-export class Stop {
-  constructor(name, id) {
+export class Favourite {
+  constructor(name, id, line, destination) {
     this.name = name;
     this.id = id;
+    this.line = line;
+    this.destination = destination;
   }
 
   name;
   id;
+  line;
+  destination;
 }
 
 export class StopData {
-  constructor(departures, deviations) {
-    this.departures = departures;
-    this.deviations = deviations;
-  }
+  name;
+  id;
+  lineNumber;
+  destination;
+  vehicleType;
   departures;
   deviations;
+  
+  constructor() {
+    this.departures = [];
+    this.deviations = [];
+  }
 }
 
 export class Deviation {
@@ -28,12 +38,7 @@ export class Deviation {
 }
 
 export class Departure {
-  lineNumber;
-  destinationName;
-  delay;
   aimedDepartureTime;
   expectedDepartureTime;
-  platform;
-  vehicleType;
   delay;
 }
