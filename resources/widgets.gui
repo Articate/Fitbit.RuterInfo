@@ -16,7 +16,7 @@
       <text id="text" x="5" y="50%+10" font-size="30" font-weight="bold">Test</text>
     </symbol>
     
-    <symbol class="stop-container">
+    <symbol class="stop-container" id="stop">
       <use href="#panoramaview-item">
         <use href="#scrollview" class="scrollview">
           <!--<use href="#view-header" height="40" fill="yellow" />-->
@@ -50,6 +50,7 @@
         </use>
       </use>
     </symbol>
+    
     <symbol id="spinner">
       <g id="spinner-container">
         <rect id="spinner-background" />

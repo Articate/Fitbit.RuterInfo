@@ -1,12 +1,12 @@
 <svg>
   <use id='main-container' href='#panoramaview' overflow='hidden'>
-    <use href="#stop">
+    <use href="#stop" class="stop-container">
     </use>
-    <use href="#stop">
+    <use href="#stop" class="stop-container">
     </use>
-    <use href="#stop">
+    <use href="#stop" class="stop-container">
     </use>
-    <use href="#stop">
+    <use href="#stop" class="stop-container">
     </use>
     <use id='pagination-dots' class='pagination' href='#pagination-widget' y='8'>
       <use href='#pagination-dot'/>

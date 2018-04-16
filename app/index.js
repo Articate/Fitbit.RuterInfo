@@ -3,15 +3,7 @@ import { vibration } from "haptics";
 import * as messaging from "messaging";
 import { inbox } from "file-transfer";
 import { readFileSync } from "fs";
-import { 
-  TRANSFER_START,
-  TRANSFER_END,
-  SEND_BUFFERED,
-  SEND_AS_FILE,
-  STOP_DATA_FILE,
-  METRO_COLOR,
-  BUS_COLOR
-} from "../common/const.js";
+import { STOP_DATA_FILE, METRO_COLOR, BUS_COLOR } from "../common/const.js";
 
 let s = JSON.stringify;
 let main = document.getElementById('main-container');
@@ -21,8 +13,7 @@ let messageBuffer = [];
 let domItems = [];
 let spinner = document.getElementById('spinner-container');
 
-(function setup() {
-  spinner.animate('enable');
+(function init() {
   gatherDom();
 })();
 
@@ -68,33 +59,8 @@ inbox.onnewfile = evt => {
 }
 
 messaging.peerSocket.onmessage = evt => {
-  let data = evt['data'];
-  if (SEND_BUFFERED) {
-    processPartMessage(data);
-  } else {
-    updateDisplay(data);
-  }
+  console.log("Received message. Unhandled");
 };
-
-function processPartMessage(data) {
-  if (data === TRANSFER_START) {
-    messageBuffer = [];
-  } else if (data === TRANSFER_END) {
-    processData();
-  } else {
-    messageBuffer.push(data);
-  }
-}
-
-function processData() {
-  let dataStr = "";
-  while (messageBuffer.length > 0) {
-    dataStr += messageBuffer.shift();
-  }  
-  
-  let stopInfo = JSON.parse(dataStr);  
-  updateDisplay(stopInfo);
-}
 
 function updateDisplay(stopInfo) {  
   for(let i in stopInfo) {
@@ -171,6 +137,7 @@ document.onkeypress = function(e) {
   spinner.style.display = "inline";
   spinner.getElementById('spinner-background').style.opacity = 0.65;
   spinner.animate("enable");
+  
   messaging.peerSocket.send({
     command: 'update'
   });
